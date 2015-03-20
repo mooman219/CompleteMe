@@ -7,6 +7,8 @@ public class Operation {
 
     public static enum Type {
 
+        MOVE_LEFT,
+        MOVE_RIGHT,
         RESET,
         ADD,
         REMOVE;

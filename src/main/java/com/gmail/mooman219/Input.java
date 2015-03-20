@@ -67,8 +67,14 @@ public class Input implements NativeKeyListener {
             System.exit(1);
             return;
         }
-        Operation operation = null;
+        Operation operation;
         switch (nke.getKeyCode()) {
+            case NativeKeyEvent.VC_LEFT:
+                operation = new Operation(Operation.Type.MOVE_LEFT, '\0');
+                break;
+            case NativeKeyEvent.VC_RIGHT:
+                operation = new Operation(Operation.Type.MOVE_RIGHT, '\0');
+                break;
             case NativeKeyEvent.VC_BACKSPACE:
                 operation = new Operation(Operation.Type.REMOVE, '\0');
                 break;
