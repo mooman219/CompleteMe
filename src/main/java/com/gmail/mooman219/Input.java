@@ -67,12 +67,23 @@ public class Input implements NativeKeyListener {
             System.exit(1);
             return;
         }
+        Operation operation = null;
+        switch (nke.getKeyCode()) {
+            case NativeKeyEvent.VC_BACKSPACE:
+                operation = new Operation(Operation.Type.REMOVE, '\0');
+                break;
+            case NativeKeyEvent.VC_ENTER:
+            case NativeKeyEvent.VC_SPACE:
+                operation = new Operation(Operation.Type.RESET, '\0');
+                break;
+            default:
+                operation = new Operation(Operation.Type.ADD, NativeInputHelper.nativeKeyToChar(nke.getKeyCode(), nke.getModifiers()));
+                break;
+        }
         try {
-            char c = NativeInputHelper.nativeKeyToChar(nke.getKeyCode(), nke.getModifiers());
-            if (c != 0) {
-                CompleteMe.queue.put(c);
-            }
+            CompleteMe.queue.put(operation);
         } catch (InterruptedException ex) {
+            // Eat
         }
     }
 

@@ -14,7 +14,7 @@ import javax.swing.JList;
  */
 public class CompleteMe {
 
-    public static final LinkedBlockingQueue<Character> queue = new LinkedBlockingQueue<>();
+    public static final LinkedBlockingQueue<Operation> queue = new LinkedBlockingQueue<>();
 
     public static void main(String[] args) throws AWTException, IOException {
         Keyboard keyboard = new Keyboard();
@@ -33,27 +33,29 @@ public class CompleteMe {
         frame.pack();
         frame.setVisible(true);
 
-        StringBuilder word = new StringBuilder();
-        Character c;
+        WordState state = new WordState();
         while (true) {
-            c = null;
             try {
-                c = queue.take();
-                word.append(c);
-            } catch (InterruptedException ex) {
-                continue;
-            }
-            if (c != null) {
-                if (c == ' ') {
-                    word.delete(0, word.length());
-                    list.setModel(new DefaultListModel());
-                } else {
-                    System.out.println("Search:" + word.toString());
-                    time = System.currentTimeMillis();
-                    display(dict.getList(word.toString()), list, 10);
-                    time = System.currentTimeMillis() - time;
-                    System.out.println("Lookup time: " + time);
+                Operation operation = queue.take();
+                state.consume(operation);
+                switch (operation.getType()) {
+                    case RESET:
+                        list.setModel(new DefaultListModel());
+                        break;
+                    case ADD:
+                    case REMOVE:
+                        if (state.hasWord()) {
+                            System.out.println("Search:" + state.getWord());
+                            time = System.currentTimeMillis();
+                            display(dict.getList(state.getWord()), list, 10);
+                            time = System.currentTimeMillis() - time;
+                            System.out.println("Lookup time: " + time);
+                        } else {
+                            list.setModel(new DefaultListModel());
+                        }
+                        break;
                 }
+            } catch (InterruptedException ex) {
             }
         }
     }
