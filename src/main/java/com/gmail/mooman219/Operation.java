@@ -10,6 +10,7 @@ public class Operation {
         MOVE_LEFT,
         MOVE_RIGHT,
         RESET,
+        ACCEPT,
         ADD,
         REMOVE;
     }
