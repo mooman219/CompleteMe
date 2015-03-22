@@ -460,6 +460,6 @@ public class NativeInputHelper {
             case NativeKeyEvent.VC_SPACE:
                 return ' ';
         }
-        return 0;
+        return '\0';
     }
 }

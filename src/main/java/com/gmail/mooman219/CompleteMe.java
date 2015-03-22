@@ -39,6 +39,9 @@ public class CompleteMe {
                 Operation operation = queue.take();
                 state.consume(operation);
                 switch (operation.getType()) {
+                    case ACCEPT:
+                        keyboard.select(state.getPosition(), state.getLength());
+                        break;
                     case RESET:
                         list.setModel(new DefaultListModel());
                         break;

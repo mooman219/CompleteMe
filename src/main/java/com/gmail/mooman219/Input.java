@@ -1,10 +1,15 @@
 package com.gmail.mooman219;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
+import org.jnativehook.NativeInputEvent;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 
@@ -34,6 +39,7 @@ public class Input implements NativeKeyListener {
                 // Only register if hook isn't already registered.
                 if (!GlobalScreen.isNativeHookRegistered()) {
                     GlobalScreen.registerNativeHook();
+                    GlobalScreen.getInstance().setEventDispatcher(new VoidDispatchService());
                 }
                 GlobalScreen.getInstance().addNativeKeyListener(singleton);
             } catch (NativeHookException ex) {
@@ -57,17 +63,51 @@ public class Input implements NativeKeyListener {
         }
     }
 
+    private static class VoidDispatchService extends AbstractExecutorService {
+
+        private boolean running = false;
+
+        public VoidDispatchService() {
+            running = true;
+        }
+
+        public void shutdown() {
+            running = false;
+        }
+
+        public List<Runnable> shutdownNow() {
+            running = false;
+            return new ArrayList<Runnable>(0);
+        }
+
+        public boolean isShutdown() {
+            return !running;
+        }
+
+        public boolean isTerminated() {
+            return !running;
+        }
+
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return true;
+        }
+
+        public void execute(Runnable r) {
+            r.run();
+        }
+    }
+
     private Input() {
     }
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent nke) {
         if (nke.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
+            System.exit(0);
             Input.unregister();
-            System.exit(1);
             return;
         }
-        Operation operation;
+        Operation operation = null;
         switch (nke.getKeyCode()) {
             case NativeKeyEvent.VC_LEFT:
                 operation = new Operation(Operation.Type.MOVE_LEFT, '\0');
@@ -78,18 +118,27 @@ public class Input implements NativeKeyListener {
             case NativeKeyEvent.VC_BACKSPACE:
                 operation = new Operation(Operation.Type.REMOVE, '\0');
                 break;
-            case NativeKeyEvent.VC_ENTER:
             case NativeKeyEvent.VC_SPACE:
+                if ((nke.getModifiers() & NativeInputEvent.CTRL_MASK) != 0) {
+                    operation = new Operation(Operation.Type.ACCEPT, '\0');
+                    break;
+                }
+            case NativeKeyEvent.VC_ENTER:
                 operation = new Operation(Operation.Type.RESET, '\0');
                 break;
             default:
-                operation = new Operation(Operation.Type.ADD, NativeInputHelper.nativeKeyToChar(nke.getKeyCode(), nke.getModifiers()));
+                char result = NativeInputHelper.nativeKeyToChar(nke.getKeyCode(), nke.getModifiers());
+                if (result != '\0') {
+                    operation = new Operation(Operation.Type.ADD, result);
+                }
                 break;
         }
-        try {
-            CompleteMe.queue.put(operation);
-        } catch (InterruptedException ex) {
-            // Eat
+        if (operation != null) {
+            try {
+                CompleteMe.queue.put(operation);
+            } catch (InterruptedException ex) {
+                // Eat
+            }
         }
     }
 
