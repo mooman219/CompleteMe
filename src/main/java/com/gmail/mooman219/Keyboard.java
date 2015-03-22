@@ -2,6 +2,7 @@ package com.gmail.mooman219;
 
 import java.awt.AWTException;
 import java.awt.Robot;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 
 /**
@@ -27,6 +28,22 @@ public class Keyboard {
 
     public Robot getRobot() {
         return robot;
+    }
+
+    public void select(int shiftLeft, int shiftRight) {
+        Toolkit.getDefaultToolkit().setLockingKeyState(KeyEvent.VK_NUM_LOCK, false);
+        robot.keyRelease(KeyEvent.VK_CONTROL);
+        for (int i = 0; i < shiftLeft; i++) {
+            robot.keyPress(KeyEvent.VK_LEFT);
+            robot.keyRelease(KeyEvent.VK_LEFT);
+        }
+        robot.keyPress(KeyEvent.VK_SHIFT);
+        for (int i = 0; i < shiftRight; i++) {
+            robot.keyPress(KeyEvent.VK_RIGHT);
+            robot.keyRelease(KeyEvent.VK_RIGHT);
+        }
+        robot.keyRelease(KeyEvent.VK_SHIFT);
+        Toolkit.getDefaultToolkit().setLockingKeyState(KeyEvent.VK_NUM_LOCK, true);
     }
 
     public void type(char character) {
