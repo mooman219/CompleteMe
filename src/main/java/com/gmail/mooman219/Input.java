@@ -39,8 +39,8 @@ public class Input implements NativeKeyListener {
                 // Only register if hook isn't already registered.
                 if (!GlobalScreen.isNativeHookRegistered()) {
                     GlobalScreen.registerNativeHook();
-                    GlobalScreen.getInstance().setEventDispatcher(new VoidDispatchService());
                 }
+                GlobalScreen.getInstance().setEventDispatcher(new VoidDispatchService());
                 GlobalScreen.getInstance().addNativeKeyListener(singleton);
             } catch (NativeHookException ex) {
                 ex.printStackTrace();
@@ -54,6 +54,7 @@ public class Input implements NativeKeyListener {
                 throw new IllegalStateException("Already unregistered.");
             }
             try {
+                GlobalScreen.getInstance().setEventDispatcher(null);
                 GlobalScreen.getInstance().removeNativeKeyListener(singleton);
                 GlobalScreen.unregisterNativeHook();
             } catch (NativeHookException ex) {
@@ -102,6 +103,7 @@ public class Input implements NativeKeyListener {
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent nke) {
+        System.out.println("Pressed " + NativeKeyEvent.getKeyText(nke.getKeyCode()) + " / " + NativeKeyEvent.getModifiersText(nke.getModifiers()));
         if (nke.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
             System.exit(0);
             Input.unregister();
@@ -121,6 +123,7 @@ public class Input implements NativeKeyListener {
             case NativeKeyEvent.VC_SPACE:
                 if ((nke.getModifiers() & NativeInputEvent.CTRL_MASK) != 0) {
                     operation = new Operation(Operation.Type.ACCEPT, '\0');
+                    NativeInputHelper.consumeNativeInputEvent(nke);
                     break;
                 }
             case NativeKeyEvent.VC_ENTER:
@@ -144,9 +147,14 @@ public class Input implements NativeKeyListener {
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent nke) {
+        System.out.println("Released " + NativeKeyEvent.getKeyText(nke.getKeyCode()));
+        if (nke.getKeyCode() == NativeKeyEvent.VC_SPACE && (nke.getModifiers() & NativeInputEvent.CTRL_MASK) != 0) {
+            NativeInputHelper.consumeNativeInputEvent(nke);
+        }
     }
 
     @Override
     public void nativeKeyTyped(NativeKeyEvent nke) {
     }
 }
+//

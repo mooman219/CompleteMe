@@ -21,7 +21,7 @@ public class CompleteMe {
         Input.register();
 
         long time = System.currentTimeMillis();
-        Dictionary dict = new Dictionary("large.txt");
+        Dictionary dict = new Dictionary("small.txt");
         time = System.currentTimeMillis() - time;
         System.out.println("Load time: " + time);
 
@@ -41,6 +41,7 @@ public class CompleteMe {
                 switch (operation.getType()) {
                     case ACCEPT:
                         keyboard.select(state.getPosition(), state.getLength());
+                        keyboard.type(dict.getTopWord());
                         break;
                     case RESET:
                         list.setModel(new DefaultListModel());
@@ -48,11 +49,10 @@ public class CompleteMe {
                     case ADD:
                     case REMOVE:
                         if (state.hasWord()) {
-                            System.out.println("Search:" + state.getWord());
                             time = System.currentTimeMillis();
                             display(dict.getList(state.getWord()), list, 10);
                             time = System.currentTimeMillis() - time;
-                            System.out.println("Lookup time: " + time);
+                            System.out.println("Searched '" + state.getWord() + "' in " + time + "ms");
                         } else {
                             list.setModel(new DefaultListModel());
                         }

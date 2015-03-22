@@ -50,6 +50,10 @@ public class Dictionary {
         Collections.sort(this.words);
     }
 
+    public String getTopWord() {
+        return words.get(0);
+    }
+
     public List<String> getList(final String word) {
         Collections.sort(words, new Comparator<String>() {
             @Override
