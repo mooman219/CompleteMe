@@ -44,6 +44,9 @@ public class Keyboard {
         }
         robot.keyRelease(KeyEvent.VK_SHIFT);
         Toolkit.getDefaultToolkit().setLockingKeyState(KeyEvent.VK_NUM_LOCK, true);
+        robot.waitForIdle();
+        robot.keyPress(KeyEvent.VK_CONTROL);
+        robot.keyRelease(KeyEvent.VK_CONTROL);
     }
 
     public void type(char character) {

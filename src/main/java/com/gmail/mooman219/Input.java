@@ -9,7 +9,6 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
-import org.jnativehook.NativeInputEvent;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 
@@ -20,28 +19,29 @@ public class Input implements NativeKeyListener {
 
     private static final Object object = new Object();
     private static Input singleton = null;
+    private final Controller controller;
 
-    public static void register() {
+    public static void register(Controller controller) {
         synchronized (object) {
             if (singleton == null) {
-                singleton = new Input();
+                singleton = new Input(controller);
             } else {
                 throw new IllegalStateException("Already registered.");
             }
             try {
-                // Clear previous logging configurations.
-                LogManager.getLogManager().reset();
-
-                // Get the logger for "org.jnativehook" and set the level to off.
-                Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-                logger.setLevel(Level.OFF);
-
                 // Only register if hook isn't already registered.
                 if (!GlobalScreen.isNativeHookRegistered()) {
+                    // Clear previous logging configurations.
+                    LogManager.getLogManager().reset();
+
+                    // Get the logger for "org.jnativehook" and set the level to off.
+                    Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+                    logger.setLevel(Level.OFF);
+
                     GlobalScreen.registerNativeHook();
+                    GlobalScreen.setEventDispatcher(new VoidDispatchService());
                 }
-                GlobalScreen.getInstance().setEventDispatcher(new VoidDispatchService());
-                GlobalScreen.getInstance().addNativeKeyListener(singleton);
+                GlobalScreen.addNativeKeyListener(singleton);
             } catch (NativeHookException ex) {
                 ex.printStackTrace();
             }
@@ -54,8 +54,8 @@ public class Input implements NativeKeyListener {
                 throw new IllegalStateException("Already unregistered.");
             }
             try {
-                GlobalScreen.getInstance().setEventDispatcher(null);
-                GlobalScreen.getInstance().removeNativeKeyListener(singleton);
+                GlobalScreen.setEventDispatcher(null);
+                GlobalScreen.removeNativeKeyListener(singleton);
                 GlobalScreen.unregisterNativeHook();
             } catch (NativeHookException ex) {
                 ex.printStackTrace();
@@ -72,89 +72,60 @@ public class Input implements NativeKeyListener {
             running = true;
         }
 
+        @Override
         public void shutdown() {
             running = false;
         }
 
+        @Override
         public List<Runnable> shutdownNow() {
             running = false;
-            return new ArrayList<Runnable>(0);
+            return new ArrayList<>(0);
         }
 
+        @Override
         public boolean isShutdown() {
             return !running;
         }
 
+        @Override
         public boolean isTerminated() {
             return !running;
         }
 
+        @Override
         public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
             return true;
         }
 
+        @Override
         public void execute(Runnable r) {
             r.run();
         }
     }
 
-    private Input() {
+    private Input(Controller controller) {
+        this.controller = controller;
     }
 
     @Override
-    public void nativeKeyPressed(NativeKeyEvent nke) {
-        System.out.println("Pressed " + NativeKeyEvent.getKeyText(nke.getKeyCode()) + " / " + NativeKeyEvent.getModifiersText(nke.getModifiers()));
-        if (nke.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
+    public void nativeKeyPressed(NativeKeyEvent e) {
+        System.out.println("Pressed " + NativeKeyEvent.getKeyText(e.getKeyCode()) + " / " + NativeKeyEvent.getModifiersText(e.getModifiers()));
+        if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
             System.exit(0);
             Input.unregister();
             return;
         }
-        Operation operation = null;
-        switch (nke.getKeyCode()) {
-            case NativeKeyEvent.VC_LEFT:
-                operation = new Operation(Operation.Type.MOVE_LEFT, '\0');
-                break;
-            case NativeKeyEvent.VC_RIGHT:
-                operation = new Operation(Operation.Type.MOVE_RIGHT, '\0');
-                break;
-            case NativeKeyEvent.VC_BACKSPACE:
-                operation = new Operation(Operation.Type.REMOVE, '\0');
-                break;
-            case NativeKeyEvent.VC_SPACE:
-                if ((nke.getModifiers() & NativeInputEvent.CTRL_MASK) != 0) {
-                    operation = new Operation(Operation.Type.ACCEPT, '\0');
-                    NativeInputHelper.consumeNativeInputEvent(nke);
-                    break;
-                }
-            case NativeKeyEvent.VC_ENTER:
-                operation = new Operation(Operation.Type.RESET, '\0');
-                break;
-            default:
-                char result = NativeInputHelper.nativeKeyToChar(nke.getKeyCode(), nke.getModifiers());
-                if (result != '\0') {
-                    operation = new Operation(Operation.Type.ADD, result);
-                }
-                break;
-        }
-        if (operation != null) {
-            try {
-                CompleteMe.queue.put(operation);
-            } catch (InterruptedException ex) {
-                // Eat
-            }
-        }
+        controller.consume(e, true);
     }
 
     @Override
-    public void nativeKeyReleased(NativeKeyEvent nke) {
-        System.out.println("Released " + NativeKeyEvent.getKeyText(nke.getKeyCode()));
-        if (nke.getKeyCode() == NativeKeyEvent.VC_SPACE && (nke.getModifiers() & NativeInputEvent.CTRL_MASK) != 0) {
-            NativeInputHelper.consumeNativeInputEvent(nke);
-        }
+    public void nativeKeyReleased(NativeKeyEvent e) {
+        System.out.println("Released " + NativeKeyEvent.getKeyText(e.getKeyCode()));
+        controller.consume(e, false);
     }
 
     @Override
     public void nativeKeyTyped(NativeKeyEvent nke) {
     }
 }
-//

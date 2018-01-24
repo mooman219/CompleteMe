@@ -13,6 +13,15 @@
 *.ear
 
 ############
+## VSCode
+############
+
+*.settings/
+*.vscode/
+.project
+.classpath
+
+############
 # NetBeans specific
 ############
 
